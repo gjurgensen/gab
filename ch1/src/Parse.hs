@@ -9,8 +9,8 @@ import Text.Parsec.String
 
 import Ast
 
-keywords :: [String]
-keywords = ["fn"]
+-- keywords :: [String]
+-- keywords = ["fn"]
 
 tok :: Parser a -> Parser a
 tok p = do
@@ -26,7 +26,6 @@ symbols = choice . fmap symbol
 
 ident :: Parser String
 ident = tok ( do 
-    notFollowedBy $ choice $ string <$> keywords
     c  <- lower
     cs <- many $ alphaNum <|> oneOf ['-', '_', '\'']
     pure $ c:cs
@@ -35,9 +34,15 @@ ident = tok ( do
 var :: Parser Term
 var = Var <$> ident
 
+followedBy :: Parser a -> Parser b -> Parser a
+p `followedBy` q = do 
+    x <- p
+    q 
+    pure x
+
 lambda :: Parser Term
 lambda = tok ( do 
-    symbols ["λ", "fn"]
+    symbol "λ" <|> (string "fn" `followedBy` many1 space)
     args <- many1 ident
     symbol "."
     body <- term
@@ -59,10 +64,5 @@ term = do
 
 parser :: Parser Term
 parser = do
-    spaces 
-    t <- term
-    eof
-    pure t
-
--- test :: String -> IO ()
--- test = parseTest parser
+    spaces
+    term `followedBy` eof
