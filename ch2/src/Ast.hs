@@ -58,7 +58,7 @@ showTerm t@(Lambda env var typ body) =
     else 
         showParens (showLambda var typ body) ++ " " ++ show env
   where
-    showLambda var env t@Lambda{} = let (args, body) = unnestLambda (Lambda emptyEnv var env t) in
+    showLambda var typ t@Lambda{} = let (args, body) = unnestLambda (Lambda emptyEnv var typ t) in
         "λ " ++ unwords (showParens . uncurry showBinding <$> args) ++ ". " ++ show body
     showLambda var typ b =
         "λ " ++ showBinding var typ ++ ". " ++ show body
