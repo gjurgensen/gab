@@ -10,12 +10,16 @@ We are going to start with an untyped lambda calculus. We'll implement just pars
 
 # Grammar
 
+We won't be excessively formal. We are roughly aiming for the following grammar:
+
 ```
-term ::= var | λ var. term  | term term
-var  ::= ...
+TERM ::= VAR | λ VAR. TERM | TERM TERM
+VAR  ::= ...
 ```
 
-We'll also add some syntactic sugar, allowing `λ x y. z` to parse to `λ x. λ y. z`.
+As usual, function application associates leftward and the bodies of lambdas extend as far as possible. Arbitrary parenthesization is permitted.
+
+Our grammar shows the core language, but we'll also add some syntactic sugar for convenience. Instead of using the unicode `λ`, you can use the ascii keyword `fn`. We also allow an abbreviation for nested functions, e.g. allowing `λ x y. z` to parse to `λ x. λ y. z`.
 
 # Semantics
 
