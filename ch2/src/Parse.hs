@@ -2,6 +2,7 @@
 
 module Parse where
 
+import qualified Data.Map.Strict as Map
 import Text.Parsec
 import Text.Parsec.String
 
@@ -84,7 +85,7 @@ lambda = tok ( do
     args <- choice [pure <$> binding, many1 $ parens binding]
     symbol "."
     body <- term
-    pure $ foldr (uncurry $ Lambda emptyEnv) body args
+    pure $ foldr (uncurry $ Lambda Map.empty) body args
     ) <?> "lambda expression"
 
 fix :: Parser Term

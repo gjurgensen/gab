@@ -12,7 +12,7 @@ import Parse
 import Eval
 
 main :: IO ()
-main = runInputT defaultSettings $ repl Map.empty emptyEnv
+main = runInputT defaultSettings $ repl Map.empty Map.empty
 
 data Command = Eval | Type | Load | Help | Quit
 
@@ -48,7 +48,7 @@ repl ctx env = do
                     outputStrLn "Type error"
                     repl ctx env
                 Just ctx' ->
-                    repl ctx' (unionEnv (Env $ Map.fromList stmts) env)
+                    repl ctx' (Map.fromList stmts `Map.union` env)
     command Help _ = do 
         outputStr $ unlines
             ["Commands:\n",

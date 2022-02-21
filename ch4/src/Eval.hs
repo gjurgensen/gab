@@ -8,18 +8,18 @@ import Type
 
 eval :: Env -> Term -> Maybe Term
 eval env val@(B _) = pure val
-eval env (Var v) = Map.lookup v $ getEnv env
+eval env (Var v) = Map.lookup v env
 eval env (Lambda _ var term) = pure $ Lambda env var term
 eval env (App fun arg) = do 
     Lambda env' var term <- eval env fun
     arg <- eval env arg
-    eval (insertEnv var arg env') term
+    eval (Map.insert var arg env') term
 eval env (Ite c t e) = do
     B b <- eval env c
     eval env $ if b then t else e
 eval env (Fix t) = do
     lam@(Lambda env' var body) <- eval env t
-    eval (insertEnv var (Fix lam) env') body
+    eval (Map.insert var (Fix lam) env') body
 
 mapLeft :: (t -> a) -> Either t b -> Either a b
 mapLeft f (Left x)  = Left $ f x
