@@ -2,8 +2,6 @@ module Ast where
 
 import qualified Data.Map.Strict as Map
 
-import Type
-
 type Ident = String
 
 newtype Env = Env {getEnv :: Map.Map Ident Term}

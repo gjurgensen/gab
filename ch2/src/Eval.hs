@@ -4,6 +4,7 @@ import qualified Data.Map.Strict as Map
 import Text.Parsec
 import Ast
 import Parse
+import Type
 
 eval :: Env -> Term -> Maybe Term
 eval env val@(B _) = pure val
@@ -20,6 +21,7 @@ eval env (Ite c t e) = do
 interp :: String -> String -> Either String Term
 interp inp src = do
     term <- mapLeft show $ parse parser src inp
+    maybeToEither "Ill-typed" $ typeCheck Map.empty term
     maybeToEither "Evaluation error" $ eval emptyEnv term
   where
     mapLeft f (Left x)  = Left $ f x
