@@ -18,13 +18,21 @@ eval env (Ite c t e) = do
     B b <- eval env c
     eval env $ if b then t else e
 
+mapLeft :: (t -> a) -> Either t b -> Either a b
+mapLeft f (Left x)  = Left $ f x
+mapLeft _ (Right x) = Right x
+
+maybeToEither :: a -> Maybe b -> Either a b
+maybeToEither _ (Just x) = Right x
+maybeToEither x Nothing  = Left x
+
 interp :: String -> String -> Either String Term
 interp inp src = do
     term <- mapLeft show $ parse parser src inp
     maybeToEither "Ill-typed" $ typeCheck Map.empty term
     maybeToEither "Evaluation error" $ eval emptyEnv term
-  where
-    mapLeft f (Left x)  = Left $ f x
-    mapLeft _ (Right x) = Right x
-    maybeToEither _ (Just x) = Right x
-    maybeToEither x Nothing  = Left x
+
+typeInterp :: String -> String -> Either String Type
+typeInterp inp src = do
+    term <- mapLeft show $ parse parser src inp
+    maybeToEither "Ill-typed" $ typeCheck Map.empty term
