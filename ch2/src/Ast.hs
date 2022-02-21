@@ -16,6 +16,9 @@ emptyEnv = Env Map.empty
 nullEnv :: Env -> Bool
 nullEnv = Map.null . getEnv
 
+insertEnv :: Ident -> Term -> Env -> Env
+insertEnv i t = Env . Map.insert i t . getEnv
+
 data Type
     = TBool
     | TArr Type Type
@@ -35,6 +38,7 @@ data Term
     | Var Ident
     | Lambda Env Ident Type Term
     | App Term Term
+    | Fix Term
     deriving Eq
 
 instance Show Term where
@@ -47,6 +51,7 @@ showTerm (Ite c t e) = unwords ["if", show c, "then", show t, "else", show e]
 showTerm (Var i) = i
 showTerm (App t1 t2@(App _ _)) = unwords [show t1, showParens $ show t2]
 showTerm (App t1 t2) = unwords [show t1, show t2]
+showTerm (Fix t) = unwords ["fix", show t]
 showTerm t@(Lambda env var typ body) = 
     if nullEnv env then
         showLambda var typ body

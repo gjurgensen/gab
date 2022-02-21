@@ -13,10 +13,13 @@ eval env (Lambda _ var t term) = pure $ Lambda env var t term
 eval env (App fun arg) = do 
     Lambda env' var _ term <- eval env fun
     arg <- eval env arg
-    eval (Env $ Map.insert var arg $ getEnv env') term
+    eval (insertEnv var arg env') term
 eval env (Ite c t e) = do
     B b <- eval env c
     eval env $ if b then t else e
+eval env (Fix t) = do
+    lam@(Lambda env' var typ body) <- eval env t
+    eval (insertEnv var (Fix lam) env') body
 
 mapLeft :: (t -> a) -> Either t b -> Either a b
 mapLeft f (Left x)  = Left $ f x

@@ -30,7 +30,7 @@ identChar :: Parser Char
 identChar = alphaNum <|> oneOf ['-', '_', '\'']
 
 keywords :: [String]
-keywords = ["if", "then", "else", "fn"]
+keywords = ["if", "then", "else", "fn", "fix"]
 
 ident :: Parser Ident
 ident = tok (try $ do 
@@ -87,6 +87,11 @@ lambda = tok ( do
     pure $ foldr (uncurry $ Lambda emptyEnv) body args
     ) <?> "lambda expression"
 
+fix :: Parser Term
+fix = do 
+    keyword "fix"
+    Fix <$> term
+
 term :: Parser Term
 term = do 
     hd <- subterm 
@@ -95,7 +100,7 @@ term = do
     <?> "term"
   where
     terms   = many1 subterm
-    subterm = choice [parens term, boolLit, lambda, ite, var]
+    subterm = choice [parens term, boolLit, lambda, ite, fix, var]
 
 parser :: Parser Term
 parser = do
