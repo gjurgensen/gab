@@ -38,20 +38,6 @@ normalizeType = fst . go (Map.empty, 0)
             (t2', z) = go y t2
          in (t1' `TArr` t2', z)
 
--- normalizeType :: Type -> Type
--- normalizeType = id
--- normalizeType = fst3 . go Map.empty 0 
---   where
---     go m n TBool = (TBool, m, n)
---     go m n (TUnif x) = case Map.lookup x m of
---         Just x' -> (TUnif x', m, n)
---         Nothing -> (TUnif n, Map.insert x n m, n+1)
---     go m n (TArr t1 t2) = 
---         let (t1', m', n') = go m n t1
---             (t2', m'', n'') = go m' n' t2
---          in (TArr t1' t2', m'', n'')
---     fst3 (a, b, c) = a
-
 showParens :: String -> String
 showParens s = "(" ++ s ++ ")"
 

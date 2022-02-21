@@ -53,12 +53,6 @@ bindUnif i t sol = Map.insert i t $ subst i t <$> sol
             (TArr a b, TArr x y) -> (a === x) sol >>= (b === y)
             _ -> Nothing
 
-constraints :: Foldable f => ConstrSolution -> f (Type, Type) -> Maybe ConstrSolution
-constraints = foldr ((=<<) . uncurry (===)) . Just
-
-solve :: Foldable f => f (Type, Type) -> Maybe ConstrSolution
-solve = constraints Map.empty
-
 
 type Ctx = Map.Map Ident Type
 data TypeState = TypeState {ctx :: Ctx, sol :: ConstrSolution, nextUnif :: Int}
