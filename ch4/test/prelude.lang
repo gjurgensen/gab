@@ -1,7 +1,0 @@
-id := fn x. x;
-
-const := fn x y. y;
-
-compose := fn f g x. f (g x);
-
-flip := fn f x y. f y x;

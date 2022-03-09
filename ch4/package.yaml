@@ -24,6 +24,7 @@ dependencies:
 - containers
 - parsec
 - haskeline
+- mtl
 - transformers
 
 library:

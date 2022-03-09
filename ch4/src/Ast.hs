@@ -1,6 +1,7 @@
 module Ast where
 
 import qualified Data.Map.Strict as Map
+import Data.List
 
 type Ident = String
 
@@ -10,7 +11,7 @@ showEnv :: Env -> String
 showEnv = show . Map.toList
 
 data Type
-    = TBool
+    = TVar Ident
     | TArr Type Type
     | TUnif Int
     deriving Eq
@@ -19,9 +20,9 @@ data Type
 normalizeType :: Type -> Type
 normalizeType = fst . go (Map.empty, 0)
   where
-    go x TBool = (TBool, x)
-    go (m, i) (TUnif j) = case Map.lookup j m of
-        Just k  -> (TUnif k, (m, i))
+    go x t@(TVar _) = (t, x)
+    go x@(m, i) (TUnif j) = case Map.lookup j m of
+        Just k  -> (TUnif k, x)
         Nothing -> (TUnif i, (Map.insert j i m, i+1))
     go x (t1 `TArr` t2) = 
         let (t1', y) = go x t1
@@ -35,27 +36,42 @@ instance Show Type where
     show t = showNormalType $ normalizeType t
 
 showNormalType :: Type -> String
-showNormalType TBool = "Bool"
-showNormalType (TArr t1@(TArr _ _) t2) = concat [showParens $ showNormalType t1, " -> ", showNormalType t2]
-showNormalType (TArr t1 t2) = concat [showNormalType t1, " -> ", showNormalType t2]
+showNormalType (TVar i) = i
+showNormalType (TArr t1@(TArr _ _) t2) = unwords [showParens $ showNormalType t1, "->", showNormalType t2]
+showNormalType (TArr t1 t2) = unwords [showNormalType t1, "->", showNormalType t2]
 showNormalType (TUnif x) = "?" ++ show x
 
 data Term 
-    = B Bool
-    | Ite Term Term Term
+    = Constr Ident
+    | Case Term [(Pattern, Term)]
     | Var Ident
     | Lambda Env Ident Term
     | App Term Term
     | Fix Term
     deriving Eq
 
+data Pattern 
+    = PVar Ident
+    | PCon Ident [Pattern]
+    deriving Eq
+
+instance Show Pattern where
+    show (PVar i) = i
+    show (PCon c ps) = unwords $ c : fmap showPatInner ps
+
+showPatInner :: Pattern -> String
+showPatInner x@PCon{} = showParens $ show x
+showPatInner x = show x
+
 instance Show Term where
     show t = showTerm t
 
 showTerm :: Term -> String
-showTerm (B True)  = "true"
-showTerm (B False) = "false"
-showTerm (Ite c t e) = unwords ["if", show c, "then", show t, "else", show e]
+showTerm (Constr i) = i
+showTerm (Case t arms) = unwords $ ["case", show t, "of"] ++
+    intersperse "|" (showArm <$> arms)
+  where
+    showArm (p, t) = unwords [show p, "=>", show t]
 showTerm (Var i) = i
 showTerm (App t1 t2@(App _ _)) = unwords [show t1, showParens $ show t2]
 showTerm (App t1 t2) = unwords [show t1, show t2]
@@ -74,3 +90,8 @@ showTerm t@(Lambda env var body) =
     unnestLambda (Lambda _ var body) = 
         let (args, body') = unnestLambda body in (var:args, body')
     unnestLambda body = ([], body)
+
+data Stmt
+    = Bind Ident Term
+    | Adt Ident [(Ident, [Type])]
+--    | Adt Ident [Ident] [(Ident, [Type])]

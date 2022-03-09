@@ -14,12 +14,13 @@ import Eval
 main :: IO ()
 main = runInputT defaultSettings $ repl Map.empty Map.empty
 
-data Command = Eval | Type | Load | Help | Quit
+data Command = Eval | Type | Stmt | Load | Help | Quit
 
 parseCommand :: String -> Maybe (Command, String)
 parseCommand s = case stripPrefix ":" s of
     Just s -> case break isSpace s of
         ("t", s) -> pure (Type, s)
+        ("s", s) -> pure (Stmt, s)
         ("l", s) -> pure (Load, s)
         ("h", s) -> pure (Help, s)
         ("q", s) -> pure (Quit, s)
@@ -39,6 +40,15 @@ repl ctx env = do
     command Type s = do
         outputStrLn $ either id show $ typeInterp s "REPL" ctx
         repl ctx env
+    command Stmt s = do
+        case load s "REPL" of 
+            Left e -> outputStrLn e
+            Right stmts -> case typeEnv ctx stmts of
+                Nothing -> do
+                    outputStrLn "Type error"
+                    repl ctx env
+                Just ctx' ->
+                    repl ctx' $ evalStmts env stmts
     command Load s = do
         stmts <- lift $ loadFile s
         case stmts of 
@@ -48,7 +58,7 @@ repl ctx env = do
                     outputStrLn "Type error"
                     repl ctx env
                 Just ctx' ->
-                    repl ctx' (Map.fromList stmts `Map.union` env)
+                    repl ctx' $ evalStmts env stmts
     command Help _ = do 
         outputStr $ unlines
             ["Commands:\n",
