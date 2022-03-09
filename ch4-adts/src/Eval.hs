@@ -76,9 +76,11 @@ eval env (Case t arms) = do
 eval env (Var v) = Map.lookup v env
 eval env (Lambda _ var term) = pure $ Lambda env var term
 eval env (App fun arg) = do 
-    Lambda env' var term <- eval env fun
+    fun <- eval env fun
     arg <- eval env arg
-    eval (Map.insert var arg env') term
+    case fun of 
+        Lambda env' var term -> eval (Map.insert var arg env') term
+        _ -> pure $ App fun arg
 eval env (Fix t) = do
     lam@(Lambda env' var body) <- eval env t
     eval (Map.insert var (Fix lam) env') body

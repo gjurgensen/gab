@@ -29,3 +29,8 @@ def const x y := y;
 def compose f g x := f (g x);
 
 def flip f x y := f y x;
+
+
+// Tests
+
+data boolOp := BoolOp (bool -> bool);
