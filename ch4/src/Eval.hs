@@ -84,6 +84,7 @@ eval env (App fun arg) = do
 eval env (Fix t) = do
     lam@(Lambda env' var body) <- eval env t
     eval (Map.insert var (Fix lam) env') body
+eval env (Annot t _) = eval env t
 
 evalStmts :: Foldable f => Env -> f Stmt -> Env
 evalStmts = foldr go

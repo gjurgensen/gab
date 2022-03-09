@@ -59,14 +59,12 @@ inferType' (Constr i) = lookupCtx i
 inferType' (Case t arms) = do
     a <- inferType' t
     (tpats, tarms) <- unzip <$> foreach typeArm arms
-    -- (tpats, tarms) <- unzip <$> traverse typeArm arms
     lift $ foldrM unify a tpats
     n <- lift freshUnifVar
     lift $ foldrM unify (TUnif n) tarms >>= canonical
   where
     typeArm (pat, arm) =
         (,) <$> typePat pat <*> inferType' arm
-        -- forgetful $ (,) <$> typePat pat <*> inferType' arm
     typePat :: Unifiable r Type => Pattern -> TypeCtx r Type
     typePat (PVar i) = do
         n <- lift freshUnifVar
@@ -95,6 +93,9 @@ inferType' (Fix t) = do
     n <- lift freshUnifVar
     lift $ unify a (TArr (TUnif n) (TUnif n))
     lift $ canonical $ TUnif n
+inferType' (Annot t typ) = do
+    typ' <- inferType' t
+    lift $ unify typ typ' >>= canonical
 
 
 inferType :: Ctx -> Term -> Maybe Type

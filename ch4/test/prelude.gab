@@ -2,8 +2,7 @@
 
 data void :=;
 
-// def absurd f := case f : void of;
-def absurd f := case f of;
+def absurd f := case f : void of;
 
 
 // Unit
@@ -31,6 +30,10 @@ def compose f g x := f (g x);
 def flip f x y := f y x;
 
 
-// Tests
+// Monomorphic product test
 
-data boolOp := BoolOp (bool -> bool);
+data bpair := BPair bool bool;
+
+def buncurry f p := case p of BPair x y => f x y;
+
+def bcurry f x y := f (BPair x y);

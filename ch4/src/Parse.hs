@@ -12,19 +12,6 @@ import Data.Char
 
 import Ast
 
--- many1Ne :: Parser a -> Parser (NonEmpty a)
--- many1Ne p = do
---     x  <- p
---     xs <- many p
---     pure $ x :| xs
-
--- sepBy1Ne :: Parser a -> Parser b -> Parser (NonEmpty a)
--- sepBy1Ne p delim = do
---     x <- p
---     delim
---     xs <- sepBy p delim
---     pure $ x :| xs
-
 tok :: Parser a -> Parser a
 tok = (<* spaces)
 
@@ -65,10 +52,6 @@ upperIdent = tok (try $ do
     c  <- upper
     cs <- many identChar
     pure $ c:cs
-    -- let str = c:cs
-    -- if str `elem` keywords then
-    --     unexpected "keyword"
-    -- else pure str
     ) <?> "uppercase identifier"
 
 tvar :: Parser Type
@@ -145,8 +128,11 @@ term = do
     pure $ foldl App hd tl
     <?> "term"
   where
-    terms   = many1 subterm
-    subterm = choice [parens term, lambda, fix, caseTerm, constr, var]
+    subterm = do
+        t <- choice [parens term, lambda, fix, caseTerm, constr, var]
+        option t $ do
+            symbol ":"
+            Annot t <$> typ
 
 bindStmt :: Parser Stmt
 bindStmt = do

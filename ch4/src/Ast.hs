@@ -48,6 +48,7 @@ data Term
     | Lambda Env Ident Term
     | App Term Term
     | Fix Term
+    | Annot Term Type
     deriving Eq
 
 data Pattern 
@@ -76,6 +77,7 @@ showTerm (Var i) = i
 showTerm (App t1 t2@(App _ _)) = unwords [show t1, showParens $ show t2]
 showTerm (App t1 t2) = unwords [show t1, show t2]
 showTerm (Fix t) = unwords ["fix", show t]
+showTerm (Annot term typ) = unwords [show term, ":", show typ]
 showTerm t@(Lambda env var body) = 
     if Map.null env then
         showLambda var body
