@@ -6,14 +6,12 @@ module Unification where
 -- import Data.Tree
 import qualified Data.Map.Strict as Map
 import Data.Maybe
+import Data.Foldable
 import Control.Monad.Trans.Class
 import Control.Monad.State.Lazy
 import Control.Monad.Trans.State.Lazy(StateT)
 
-type f $ a = f a
-infixr 2 $
-
-type a + b = Either a b
+import Misc
 
 data UTree a = Node a [UTree a] | Leaf Int
     deriving (Eq, Show)
@@ -80,13 +78,13 @@ constrain l r sol =
             (_, Leaf i) -> pure $ bindUnif i l' sol
             (Node x xs, Node y ys) ->
                 if x == y && length xs == length ys then
-                    foldr ((=<<) . uncurry constrain) (Just sol) $ zip xs ys
+                    foldrM (uncurry constrain) sol $ zip xs ys
                 else 
                     Nothing
 
 class Eq r => Unifiable r a where
     toUTree :: a -> UTree r
-    fromUTree :: UTree r -> a
+    fromUTree :: UTree r -> Maybe a
 
 
 data UnifierState r = UnifierState {sol :: Solution r, nextUnif :: Int}
@@ -119,7 +117,7 @@ unify t t' = do
     let (ut, ut') = (toUTree t, toUTree t')
     s' <- liftMaybe $ constrain ut ut' s
     put $ UnifierState s' n
-    pure $ fromUTree $ underSol s' ut
+    liftMaybe $ fromUTree $ underSol s' ut
 
 freshUnifVar :: Unifiable r x => Unifier r x Int
 freshUnifVar = do
@@ -130,12 +128,13 @@ freshUnifVar = do
 canonical :: Unifiable r x => x -> Unifier r x x
 canonical x = do
     s <- sol <$> get
-    pure $ fromUTree $ underSol s $ toUTree x
+    liftMaybe $ fromUTree $ underSol s $ toUTree x
 
 runUnifier :: Unifiable r x => Unifier r x a -> Maybe (a, Map.Map Int x)
-runUnifier u = mapSnd (fmap fromUTree . sol) <$> runStateT (getUnifier u) emptyState
-    where
-      mapSnd f (x, y) = (x, f y)
+runUnifier u = do
+    (a, st) <- runStateT (getUnifier u) emptyState
+    map <- traverse fromUTree $ sol st
+    pure (a, map)
 
 solveUnifier :: Unifiable r x => Unifier r x a -> Maybe $ Map.Map Int x
 solveUnifier = fmap snd . runUnifier

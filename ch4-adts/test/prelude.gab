@@ -1,0 +1,31 @@
+// Void
+
+data void :=;
+
+// def absurd f := case f : void of;
+def absurd f := case f of;
+
+
+// Unit
+
+data unit := Unit;
+
+
+// Booleans
+
+data bool := True | False;
+
+def if c t e := case c of True => t | False => e;
+
+def not b := if b False True;
+
+
+// Basic higher-order functions
+
+def id x := x;
+
+def const x y := y;
+
+def compose f g x := f (g x);
+
+def flip f x y := f y x;

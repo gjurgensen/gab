@@ -1,7 +1,6 @@
 module Ast where
 
 import qualified Data.Map.Strict as Map
-import Data.List.NonEmpty (NonEmpty, toList)
 import Data.List
 
 type Ident = String
@@ -38,18 +37,31 @@ instance Show Type where
 
 showNormalType :: Type -> String
 showNormalType (TVar i) = i
-showNormalType (TArr t1@(TArr _ _) t2) = concat [showParens $ showNormalType t1, " -> ", showNormalType t2]
-showNormalType (TArr t1 t2) = concat [showNormalType t1, " -> ", showNormalType t2]
+showNormalType (TArr t1@(TArr _ _) t2) = unwords [showParens $ showNormalType t1, "->", showNormalType t2]
+showNormalType (TArr t1 t2) = unwords [showNormalType t1, "->", showNormalType t2]
 showNormalType (TUnif x) = "?" ++ show x
 
 data Term 
     = Constr Ident
-    | Case Term (NonEmpty (Ident, [Ident], Term))
+    | Case Term [(Pattern, Term)]
     | Var Ident
     | Lambda Env Ident Term
     | App Term Term
     | Fix Term
     deriving Eq
+
+data Pattern 
+    = PVar Ident
+    | PCon Ident [Pattern]
+    deriving Eq
+
+instance Show Pattern where
+    show (PVar i) = i
+    show (PCon c ps) = unwords $ c : fmap showPatInner ps
+
+showPatInner :: Pattern -> String
+showPatInner x@PCon{} = showParens $ show x
+showPatInner x = show x
 
 instance Show Term where
     show t = showTerm t
@@ -57,9 +69,9 @@ instance Show Term where
 showTerm :: Term -> String
 showTerm (Constr i) = i
 showTerm (Case t arms) = unwords $ ["case", show t, "of"] ++
-    intersperse "|" (showArm <$> toList arms)
+    intersperse "|" (showArm <$> arms)
   where
-    showArm (i, vars, t) = unwords $ i : vars ++ ["=>", show t]
+    showArm (p, t) = unwords [show p, "=>", show t]
 showTerm (Var i) = i
 showTerm (App t1 t2@(App _ _)) = unwords [show t1, showParens $ show t2]
 showTerm (App t1 t2) = unwords [show t1, show t2]
@@ -81,4 +93,5 @@ showTerm t@(Lambda env var body) =
 
 data Stmt
     = Bind Ident Term
-    | Adt Ident [Ident] (NonEmpty (Ident, [Type]))
+    | Adt Ident [(Ident, [Type])]
+--    | Adt Ident [Ident] [(Ident, [Type])]

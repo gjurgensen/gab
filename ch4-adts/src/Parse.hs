@@ -1,14 +1,29 @@
+{-# LANGUAGE TupleSections #-}
 -- {-# LANGUAGE FlexibleContexts #-}
 
 module Parse where
 
 import qualified Data.Map.Strict as Map
-import Data.List.NonEmpty
+-- import Data.List.NonEmpty
 import Text.Parsec
 import Text.Parsec.String
+import Data.Maybe
 import Data.Char
 
 import Ast
+
+-- many1Ne :: Parser a -> Parser (NonEmpty a)
+-- many1Ne p = do
+--     x  <- p
+--     xs <- many p
+--     pure $ x :| xs
+
+-- sepBy1Ne :: Parser a -> Parser b -> Parser (NonEmpty a)
+-- sepBy1Ne p delim = do
+--     x <- p
+--     delim
+--     xs <- sepBy p delim
+--     pure $ x :| xs
 
 tok :: Parser a -> Parser a
 tok = (<* spaces)
@@ -33,10 +48,10 @@ identChar :: Parser Char
 identChar = alphaNum <|> oneOf ['-', '_', '\'']
 
 keywords :: [String]
-keywords = ["if", "then", "else", "fn", "fix", "adt"]
+keywords = ["fn", "fix", "data", "def", "case", "of"]
 
 ident :: Parser Ident
-ident = tok (try $ do 
+ident = tok (try $ do
     c  <- lower
     cs <- many identChar
     let str = c:cs
@@ -44,6 +59,17 @@ ident = tok (try $ do
         unexpected "keyword"
     else pure str
     ) <?> "identifier"
+
+upperIdent :: Parser Ident
+upperIdent = tok (try $ do
+    c  <- upper
+    cs <- many identChar
+    pure $ c:cs
+    -- let str = c:cs
+    -- if str `elem` keywords then
+    --     unexpected "keyword"
+    -- else pure str
+    ) <?> "uppercase identifier"
 
 tvar :: Parser Type
 tvar = TVar <$> ident
@@ -70,17 +96,19 @@ typ = do
 var :: Parser Term
 var = Var <$> ident
 
+constr :: Parser Term
+constr = Constr <$> upperIdent
+
 binding :: Parser (Ident, Type)
-binding = do 
+binding = do
     i <- ident
     symbol ":"
     t <- typ
     pure (i,t)
 
 lambda :: Parser Term
-lambda = tok ( do 
+lambda = tok ( do
     symbol "λ" <|> keyword "fn"
-    -- args <- choice [pure <$> binding, many1 $ parens binding]
     args <- many1 ident
     symbol "."
     body <- term
@@ -88,56 +116,73 @@ lambda = tok ( do
     ) <?> "lambda expression"
 
 fix :: Parser Term
-fix = do 
+fix = do
     keyword "fix"
     Fix <$> term
 
+pat :: Parser Pattern
+pat = parens pat <|> varPat <|> constrPat
+  where
+    varPat = PVar <$> ident
+    constrPat = PCon <$> upperIdent <*> many pat
+
+caseTerm :: Parser Term
+caseTerm = do
+    keyword "case"
+    scrutinee <- term
+    keyword "of"
+    Case scrutinee <$> sepBy arm (symbol "|")
+  where
+    arm = do
+        p <- pat
+        symbol "=>"
+        (p ,) <$> term
+
 term :: Parser Term
-term = do 
-    hd <- subterm 
+term = do
+    hd <- subterm
     tl <- many subterm
     pure $ foldl App hd tl
     <?> "term"
   where
     terms   = many1 subterm
-    subterm = choice [parens term, lambda, fix, var]
+    subterm = choice [parens term, lambda, fix, caseTerm, constr, var]
 
 bindStmt :: Parser Stmt
 bindStmt = do
+    keyword "def"
     i <- ident
+    args <- many ident
     symbol ":="
-    Bind i <$> term
+    t <- term
+    pure $ Bind i $ foldr (Lambda Map.empty) t args
 
-many1Ne :: Parser a -> Parser (NonEmpty a)
-many1Ne p = do
-    x  <- p
-    xs <- many p
-    pure $ x :| xs
-
-sepBy1Ne :: Parser a -> Parser b -> Parser (NonEmpty a)
-sepBy1Ne p delim = do
-    x <- p
-    delim
-    xs <- sepBy p delim
-    pure $ x :| xs
+comment :: Parser ()
+comment = tok $ do
+    symbol "//"
+    many $ noneOf "\n"
+    pure ()
 
 adt :: Parser Stmt
 adt = do
     keyword "data"
     name <- ident
-    vars <- many ident
     symbol ":="
-    cons <- sepBy1Ne constructor $ symbol "|"
-    pure $ Adt name vars cons
+    cons <- sepBy constructor $ symbol "|"
+    pure $ Adt name cons
     <?> "ADT"
   where
-    constructor = (,) <$> ident <*> many typ
+    constructor = (,) <$> upperIdent <*> many typ
 
 statement :: Parser Stmt
 statement = bindStmt <|> adt <?> "statement"
 
+foo :: Parser [Maybe Stmt]
+foo = many $ (Nothing <$ comment) <|> (pure <$> statement <* symbol ";")
+
 program :: Parser [Stmt]
-program = many $ statement <* symbol ";"
+program =
+   catMaybes <$> many ((Nothing <$ comment) <|> (pure <$> statement <* symbol ";"))
 
 full :: Parser a -> Parser a
 full p = spaces >> (p <* eof)

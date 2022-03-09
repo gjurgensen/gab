@@ -1,0 +1,9 @@
+data void := ;
+
+data unit := Unit;
+
+data bool := True | False;
+
+def not b := case b of True => False | False => True;
+
+def absurd f := case f of;
