@@ -74,7 +74,7 @@ inferType' (Case t arms) = do
     lift $ foldrM unify (TUnif n) tarms >>= canonical
   where
     typeArm (pat, arm) =
-        (,) <$> typePat pat <*> inferType' arm
+        (,) <$> typePat pat <*> (inferType' >=> inst) arm
     typePat :: Unifiable r Type => Pattern -> TypeCtx r Type
     typePat (PVar i) = do
         n <- lift freshUnifVar
@@ -85,7 +85,7 @@ inferType' (Case t arms) = do
         traverse_ bindArgs $ zip ps codom
         pure $ curryArr (drop (length ps) codom) dom
     bindArgs (p, t) = typePat p >>= lift . unify t
-inferType' (Var v) = lookupCtx v >>= inst
+inferType' (Var v) = lookupCtx v
 inferType' (Lambda _ var body) = do
     n <- lift freshUnifVar
     insertCtx var $ TUnif n

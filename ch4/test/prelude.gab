@@ -42,7 +42,6 @@ def mult := fix fn go x y. case x
     of Zero    => Zero
      | Succ x' => add y (go x' y);
 
-// BUG: funpow is not polymorphic
 def funpow f := fix fn go n. case n
     of Zero    => id
      | Succ n' => compose f (go n');
