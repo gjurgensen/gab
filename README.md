@@ -8,6 +8,10 @@ The repository is separated into chapters, implementing increasingly complicated
 
 This project is still an early work in progress. Chapter documentation is lacking for the moment. Many more chapters are to come. The goal is to eventually reach a consistent and total dependently typed language (in the spirit of Coq, Agda), with an IO monad for executing real effects.
 
+## Building
+
+We use Haskell to implement our interpreter. You'll need the Stack tool to build each project. Run projects with `stack run`.
+
 ## Does Gab stand for anything?
 
 Of course if does! It stands for "Grant's Awesome Backronym."

@@ -1,3 +1,0 @@
-The explicit type annotations on function arguments is, well, annoying. For one, they are inflexible. In our untyped lambda calculus, `λ x. x` served as the identity function on all types. But now, we are forced to give it a singular concrete type. Monomorphic frustrations aside, it is just a hassle writing all of these annotations. As I'm sure you have seen in other languages, most types can be inferred.
-
-We will solve both problems by introducing polymorphic types, which we will restrict by unification.
