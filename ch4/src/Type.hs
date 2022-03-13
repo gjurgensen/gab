@@ -37,10 +37,10 @@ type TypeCtx r = StateT Ctx (Unifier r Type)
 lookupCtx :: Unifiable r Type => Ident -> TypeCtx r Type
 lookupCtx i = do
     c <- get
-    t <- lift $ liftMaybe (err c) $ Map.lookup i c
+    t <- lift $ liftMaybe err $ Map.lookup i c
     lift $ canonical t
   where
-    err c = MiscErr $ unwords ["Variable", show c, "not in scope"]
+    err = MiscErr $ unwords ["Variable", show i, "not in scope"]
 
 insertCtx :: Unifiable r Type => Ident -> Type -> TypeCtx r ()
 insertCtx i t = do
@@ -146,7 +146,7 @@ substType m t@TUnif{} = t
 inst :: Unifiable r Type => Type -> TypeCtx r Type
 inst (TForall i t) = do
     n <- lift freshUnifVar
-    pure $ substType (Map.singleton i (TUnif n)) t
+    inst $ substType (Map.singleton i (TUnif n)) t
 inst t = pure t
 
 peelForalls :: Type -> ([Ident], Type)
