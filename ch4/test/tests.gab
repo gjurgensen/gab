@@ -1,0 +1,22 @@
+// Make sure to import the prelude first
+
+
+// Monomorphic product test
+
+data bpair := BPair bool bool;
+
+def buncurry f p := case p of BPair x y => f x y;
+
+def bcurry f x y := f (BPair x y);
+
+
+// bool list
+
+// Note, adt definitions do not check that type arguments are previously defined. Hence,
+// the recursive appearance of blist here isn't a problem.
+data blist := BNil | BCons bool blist;
+
+// We accidentally made our language lazy-ish! Try evaluating `blistMap not (BCons True BNil)`.
+def blistMap f := fix fn go l. case l
+    of BNil => BNil
+     | BCons b l' => BCons (f b) (go l');

@@ -30,22 +30,19 @@ def compose f g x := f (g x);
 def flip f x y := f y x;
 
 
-// Monomorphic product test
+// Natural numbers
 
-data bpair := BPair bool bool;
+data nat := Zero | Succ nat;
 
-def buncurry f p := case p of BPair x y => f x y;
+def add := fix fn go x y. case x
+    of Zero    => y
+     | Succ x' => Succ (go x' y);
 
-def bcurry f x y := f (BPair x y);
+def mult := fix fn go x y. case x
+    of Zero    => Zero
+     | Succ x' => add y (go x' y);
 
-
-// bool list
-
-// Note, adt definitions do not check that type arguments are previously defined. Hence,
-// the recursive appearance of blist here isn't a problem.
-data blist := BNil | BCons bool blist;
-
-// We accidentally made our language lazy-ish! Try evaluating `blistMap not (BCons True BNil)`.
-def blistMap f := fix fn go l. case l
-    of BNil => BNil
-     | BCons b l' => BCons (f b) (go l');
+// BUG: funpow is not polymorphic
+def funpow f := fix fn go n. case n
+    of Zero    => id
+     | Succ n' => compose f (go n');
