@@ -26,3 +26,7 @@ Our grammar shows the core language, but we'll also add some syntactic sugar for
 # Semantics
 
 We'll implement a call-by-value semantics. I.e. arguments to functions are fully evaluated before function application.
+
+# Running the Interpreter
+
+Running the interpreter (with `stack run`) will put you into a REPL, where you can evaluate concrete lambda calculus expressions.

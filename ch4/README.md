@@ -23,3 +23,17 @@ TYPE ::= VAR | TYPE -> TYPE
 ```
 
 Note that we may define function bindings such as `def id := fn x. x;`, but we also provide the alternate sugared alternative `def id x := x;`.
+
+# Typing
+
+Before considering ADTs and constructors, we must address the introduction of `def` statements. These are perhaps subtly disruptive. Consider the statement `def id x := x;`. We might give it the type `?0 -> ?0`, as we did in the last chapter. But this is in a sense monomorphic, despite the appearance of flexibility. If you later include `id True`, this will lead to the `id` type being constrained to `Bool -> Bool`, and it will now no longer accomodate any other instantiation. For instance, `id not` would require `id` to have type `(Bool -> Bool) -> Bool -> Bool`, which is incompatible with the earlier concrete type.
+
+We solve this by introducing proper polymorphism. Instead of type `?0 -> ?0`, `id` will have type `∀ 'a. 'a -> 'a`. This will have the same behavior, but it may be repeatedly instantiated with different variables `'a` without disruption.
+
+Typing of constructors is suprisingly straightforward. Given a declaration `data A := ... | B x y ... z | ...` we give constructor `B` the type `x -> y -> ... -> z -> A`. Note that we do not currently allow the ADT to take type arguments, although it may be recursive.
+
+Typing of the `case` construct is less friendly. We must ensure that each pattern is compatible (unifiable) with the scrutinee. Then the type is the shared type of each arm of, typed in a context extended with the variables appearing in their respective patterns.
+
+# Semantics
+
+The `case` construct works by unification, which motivates our abstraction of unification away from types and into a generic process over unification trees. We attempt to unify the normalized scrutinee with each pattern. The first match is accepted and we enter this arm. We do not at the moment check for totality of patterns, so it is possible that no pattern matches even in a well-typed case expression, and that our resulting program will diverge.

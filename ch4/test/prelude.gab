@@ -1,4 +1,4 @@
-// Void
+// Void - the uninhabited type
 
 data void :=;
 

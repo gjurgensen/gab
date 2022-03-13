@@ -18,3 +18,13 @@ TYPE ::= Bool | TYPE -> TYPE
 Function application associates rightward.
 
 Multi-variable lambda require parentheses around each variable-type pair. I.e. `λ(x: t)(y: t'). z`.
+
+# Typing
+
+Again, we won't bother specifying things formally. If you'd like an introduction to formal type theory, I'd highly recommend Pierce's *Types and Programming Languages*.
+
+The types here are straightforward. `true` and `false` obviously have type `Bool`. The type of a variable is given at its binding cite. `fix t` has type `A` if `t` has type `A -> A`. `if c then t else e` has type `A` if `c` has type `Bool`, and both `t` and `e` are of type `A`.
+
+# Running the Interpreter
+
+We add commands to the REPL. Type `:h` to see them!
