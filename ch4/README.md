@@ -37,3 +37,7 @@ Typing of the `case` construct is less friendly. We must ensure that each patter
 # Semantics
 
 The `case` construct works by unification, which motivates our abstraction of unification away from types and into a generic process over unification trees. We attempt to unify the normalized scrutinee with each pattern. The first match is accepted and we enter this arm. We do not at the moment check for totality of patterns, so it is possible that no pattern matches even in a well-typed case expression, and that our resulting program will diverge.
+
+# Running the interpreter
+
+We add a "load" command to the REPL to process gab files. Try `:l test/prelude.gab` to load in some definitions!
