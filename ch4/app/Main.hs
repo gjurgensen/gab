@@ -10,6 +10,7 @@ import Ast
 import Type
 import Parse
 import Eval
+import Misc
 
 main :: IO ()
 main = runInputT defaultSettings $ repl Map.empty Map.empty
@@ -40,25 +41,33 @@ repl ctx env = do
     command Type s = do
         outputStrLn $ either id show $ typeInterp s "REPL" ctx
         repl ctx env
-    command Stmt s = do
-        case load s "REPL" of 
-            Left e -> outputStrLn e
-            Right stmts -> case typeEnv ctx stmts of
-                Nothing -> do
-                    outputStrLn "Type error"
+    command Stmt s =
+        let res = do
+                stmts <- load s "REPL"
+                ctx' <- mapLeft ((++) "Type error: " . show)
+                        $ typeEnv ctx stmts
+                env' <- mapLeft ((++) "Evaluation error: " . show)
+                        $ evalStmts env stmts
+                pure (ctx', env')
+        in  case res of 
+                Left e -> do
+                    outputStrLn e
                     repl ctx env
-                Just ctx' ->
-                    repl ctx' $ evalStmts env stmts
+                Right x -> uncurry repl x
     command Load s = do
         stmts <- lift $ loadFile s
-        case stmts of 
-            Left e -> outputStrLn e
-            Right stmts -> case typeEnv ctx stmts of
-                Nothing -> do
-                    outputStrLn "Type error"
-                    repl ctx env
-                Just ctx' ->
-                    repl ctx' $ evalStmts env stmts
+        let res = do
+                stmts <- stmts
+                ctx' <- mapLeft ((++) "Type error: " . show)
+                        $ typeEnv ctx stmts
+                env' <- mapLeft ((++) "Evaluation error: " . show)
+                        $ evalStmts env stmts
+                pure (ctx', env')
+        case res of 
+            Left e -> do
+                outputStrLn e
+                repl ctx env
+            Right x -> uncurry repl x
     command Help _ = do 
         outputStr $ unlines
             ["Commands:\n",

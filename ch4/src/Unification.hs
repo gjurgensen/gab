@@ -86,10 +86,19 @@ class Eq r => Unifiable r a where
     toUTree :: a -> UTree r
     fromUTree :: UTree r -> Maybe a
 
+data UnifErr x = UndefFromUTree | FailedUnify x x | MiscErr String
+
+instance Show x => Show (UnifErr x) where
+    show UndefFromUTree = "Could not extract term from unification tree"
+    show (FailedUnify x y) = unwords ["Could not unify", show x, "with", show y]
+    show (MiscErr s) = s
+
+fromUTreeE :: Unifiable r x => UTree r -> UnifErr x + x
+fromUTreeE = maybeToEither UndefFromUTree . fromUTree
 
 data UnifierState r = UnifierState {sol :: Solution r, nextUnif :: Int}
 data Unifier r x a = Unifiable r x =>
-    Unifier {getUnifier :: StateT (UnifierState r) Maybe a}
+    Unifier {getUnifier :: StateT (UnifierState r) (Either (UnifErr x)) a}
 
 instance Functor (Unifier r x) where
     fmap f (Unifier x) = Unifier $ fmap f x
@@ -105,19 +114,31 @@ instance Unifiable r x => Monad (Unifier r x) where
 instance Unifiable r x => MonadState (UnifierState r) (Unifier r x) where
     state = Unifier . state
 
-liftMaybe :: Unifiable r x => Maybe a -> Unifier r x a
-liftMaybe = Unifier . lift
+liftEither :: Unifiable r x => UnifErr x + a -> Unifier r x a
+liftEither = Unifier . lift
 
+liftMaybe :: Unifiable r x => UnifErr x -> Maybe a -> Unifier r x a
+liftMaybe x = liftEither . maybeToEither x
+
+liftUTree :: Unifiable r x => UTree r -> Unifier r x x
+liftUTree = liftEither . fromUTreeE
+    
 emptyState :: UnifierState r
 emptyState = UnifierState Map.empty 0
 
-unify :: Unifiable r x => x -> x -> Unifier r x x
+
+unify :: (Unifiable r x, Show x) => x -> x -> Unifier r x x
 unify t t' = do
     UnifierState s n <- get
     let (ut, ut') = (toUTree t, toUTree t')
-    s' <- liftMaybe $ constrain ut ut' s
+    s' <- liftMaybe (unifyErr ut ut') $ constrain ut ut' s
     put $ UnifierState s' n
-    liftMaybe $ fromUTree $ underSol s' ut
+    liftUTree $ underSol s' ut
+  where
+    unifyErr t t' = case (fromUTree t, fromUTree t') of
+        (Nothing, _) -> UndefFromUTree
+        (_, Nothing) -> UndefFromUTree
+        (Just ut, Just ut') -> FailedUnify ut ut'
 
 freshUnifVar :: Unifiable r x => Unifier r x Int
 freshUnifVar = do
@@ -128,16 +149,16 @@ freshUnifVar = do
 canonical :: Unifiable r x => x -> Unifier r x x
 canonical x = do
     s <- sol <$> get
-    liftMaybe $ fromUTree $ underSol s $ toUTree x
+    liftUTree $ underSol s $ toUTree x
 
-runUnifier :: Unifiable r x => Unifier r x a -> Maybe (a, Map.Map Int x)
+runUnifier :: Unifiable r x => Unifier r x a -> UnifErr x + (a, Map.Map Int x)
 runUnifier u = do
     (a, st) <- runStateT (getUnifier u) emptyState
-    map <- traverse fromUTree $ sol st
+    map <- traverse fromUTreeE $ sol st
     pure (a, map)
 
-solveUnifier :: Unifiable r x => Unifier r x a -> Maybe $ Map.Map Int x
+solveUnifier :: Unifiable r x => Unifier r x a -> UnifErr x + Map.Map Int x
 solveUnifier = fmap snd . runUnifier
 
-evalUnifier :: Unifiable r x => Unifier r x a -> Maybe a
+evalUnifier :: Unifiable r x => Unifier r x a -> UnifErr x + a
 evalUnifier = fmap fst . runUnifier

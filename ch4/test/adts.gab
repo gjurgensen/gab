@@ -1,9 +1,0 @@
-data void :=;
-
-data unit := Unit;
-
-data bool := True | False;
-
-def ite c t e := case c of True => t | False => e;
-
-def absurd f := case f of;
