@@ -94,11 +94,6 @@ eval env (Fix t) = do
         _ -> Left $ MiscErr "Cannot fix a non-function"
 eval env (Annot t _) = eval env t
 
--- evalStmts :: Foldable f => Env -> f Stmt -> Env
--- evalStmts = foldr go
---   where
---     go (Bind i t) = Map.insert i t
---     go _ = id
 
 evalStmts :: Foldable f => Env -> f Stmt -> UnifErr Term + Env
 evalStmts = foldlM go
@@ -126,3 +121,25 @@ loadFile :: String -> IO (String + [Stmt])
 loadFile path = do
     inp <- readFile path
     pure $ load inp path
+
+
+interpProg :: String -> Ctx -> Env -> String -> String + (Ctx, Env)
+interpProg name ctx env s = do
+    stmts <- load s name
+    ctx' <- mapLeft ((++) "Type error: " . show)
+            $ typeEnv ctx stmts
+    env' <- mapLeft ((++) "Evaluation error: " . show)
+            $ evalStmts env stmts
+    pure (ctx', env')
+ 
+interpProgFile :: Ctx -> Env -> String -> IO (String + (Ctx, Env))
+interpProgFile ctx env path = do
+    stmts <- loadFile path
+    pure $ do
+        stmts <- stmts
+        ctx' <- mapLeft ((++) "Type error: " . show) 
+                $ typeEnv ctx stmts
+        env' <- mapLeft ((++) "Evaluation error: " . show)
+                $ evalStmts env stmts
+        pure (ctx', env')
+ 

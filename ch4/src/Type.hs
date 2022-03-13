@@ -143,12 +143,6 @@ substType m (TArr x y) = TArr (substType m x) (substType m y)
 substType m (TForall i t) = TForall i (substType (Map.delete i m) t)
 substType m t@TUnif{} = t
 
--- unpoly :: Int -> Type -> (Int, Type)
--- unpoly n t = 
---     let (is, t') = peelForalls t
---         m = Map.fromList $ zip is $ TUnif <$> [n..]
---     in  (n + length is, substType m t')
-
 inst :: Unifiable r Type => Type -> TypeCtx r Type
 inst (TForall i t) = do
     n <- lift freshUnifVar

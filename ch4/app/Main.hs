@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 module Main where
 
 import qualified Data.Map.Strict as Map
@@ -42,28 +43,12 @@ repl ctx env = do
         outputStrLn $ either id show $ typeInterp s "REPL" ctx
         repl ctx env
     command Stmt s =
-        let res = do
-                stmts <- load s "REPL"
-                ctx' <- mapLeft ((++) "Type error: " . show)
-                        $ typeEnv ctx stmts
-                env' <- mapLeft ((++) "Evaluation error: " . show)
-                        $ evalStmts env stmts
-                pure (ctx', env')
-        in  case res of 
-                Left e -> do
-                    outputStrLn e
-                    repl ctx env
-                Right x -> uncurry repl x
-    command Load s = do
-        stmts <- lift $ loadFile s
-        let res = do
-                stmts <- stmts
-                ctx' <- mapLeft ((++) "Type error: " . show)
-                        $ typeEnv ctx stmts
-                env' <- mapLeft ((++) "Evaluation error: " . show)
-                        $ evalStmts env stmts
-                pure (ctx', env')
-        case res of 
+        case interpProg "REPL" ctx env s of
+            Left e ->
+                outputStrLn e
+            Right x -> uncurry repl x
+    command Load s =
+        lift (interpProgFile ctx env s) >>= \case
             Left e -> do
                 outputStrLn e
                 repl ctx env
